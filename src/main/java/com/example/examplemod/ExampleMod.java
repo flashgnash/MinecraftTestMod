@@ -2,11 +2,15 @@ package com.example.examplemod;
 
 import com.mojang.logging.LogUtils;
 
-import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.network.chat.TextComponent;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraftforge.client.event.ClientChatEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegistryEvent;
+import net.minecraftforge.event.ServerChatEvent;
 import net.minecraftforge.event.entity.player.EntityItemPickupEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.InterModComms;
@@ -15,6 +19,7 @@ import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.InterModEnqueueEvent;
 import net.minecraftforge.fml.event.lifecycle.InterModProcessEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
+import net.minecraftforge.event.world.BlockEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.slf4j.Logger;
 
@@ -29,17 +34,25 @@ public class ExampleMod
 
     public ExampleMod()
     {
+        var modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
+
+
         // Register the setup method for modloading
-        FMLJavaModLoadingContext.get().getModEventBus().addListener(this::setup);
+        modEventBus.addListener(this::setup);
         // Register the enqueueIMC method for modloading
-        FMLJavaModLoadingContext.get().getModEventBus().addListener(this::enqueueIMC);
+        modEventBus.addListener(this::enqueueIMC);
         // Register the processIMC method for modloading
-        FMLJavaModLoadingContext.get().getModEventBus().addListener(this::processIMC);
+        modEventBus.addListener(this::processIMC);
+
 
         // Register ourselves for server and other game events we are interested in
         MinecraftForge.EVENT_BUS.register(this);
+
     }
 
+
+
+    
     private void setup(final FMLCommonSetupEvent event)
     {
         // some preinit code
@@ -61,13 +74,65 @@ public class ExampleMod
                 collect(Collectors.toList()));
     }
 
+
+    @SubscribeEvent
+    public void chatMessage(ServerChatEvent event){
+        
+        LOGGER.info("Server chat event");
+
+        var msg = event.getMessage();
+
+        if(msg.contains("lapis god") && msg.contains("bad")){
+            
+            var ply = event.getPlayer();
+
+            ply.hurt(null, 255);
+            
+            var text = (ply.getName().getString()+" was smitten by the lapis god");
+            ply.sendMessage(new TextComponent(text),null);
+
+
+
+        }
+
+    }
+    
+    @SubscribeEvent
+    public void chatMessage(ClientChatEvent event){
+        
+        LOGGER.info("Client chat event");
+    }
     // You can use SubscribeEvent and let the Event Bus discover methods to call
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event)
     {
         // Do something when the server starts
-        LOGGER.info("HELLO from server starting");
+        LOGGER.info("GOODBYE from server starting");
     }
+
+
+    @SubscribeEvent
+    public void onPickupItem(EntityItemPickupEvent event) {
+
+        LOGGER.info("Blah blahfgggfdff");
+
+        
+
+        var ent = event.getEntityLiving();
+
+        var text = (ent.getName().getString()+" picked up an "+event.getItem().getName().getString());
+
+        ent.sendMessage(new TextComponent(text),null);
+
+    }
+
+
+
+    @SubscribeEvent
+    public void onBlockDropItems(BlockEvent.BreakEvent event) {
+        LOGGER.info("This is a test");
+    }
+ 
 
     // You can use EventBusSubscriber to automatically subscribe events on the contained class (this is subscribing to the MOD
     // Event bus for receiving Registry Events)
@@ -82,13 +147,7 @@ public class ExampleMod
         }
     }
 
-    @SubscribeEvent
-    public static void pickupItem(EntityItemPickupEvent event) {
 
-        var ent = event.getEntityLiving();
 
-        ent.die(DamageSource.ANVIL);
 
-    }
-
-}
+ }
